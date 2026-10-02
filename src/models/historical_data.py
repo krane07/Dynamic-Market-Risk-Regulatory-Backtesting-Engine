@@ -1,6 +1,6 @@
 import datetime
 from sqlalchemy import String, UniqueConstraint, Index
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column
 from src.core.database import Base
 
 class HistoricalData(Base):

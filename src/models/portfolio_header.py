@@ -14,7 +14,7 @@ class PortfolioHeader(Base):
     """
     __tablename__ = "portfolio_header"
     portfolio_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    portfolio_name: Mapped[str] = mapped_column(String)
+    portfolio_name: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     creation_date: Mapped[datetime] = mapped_column(server_default=func.now())
     updated_date: Mapped[datetime] = mapped_column(
         server_default=func.now(), onupdate=func.now()

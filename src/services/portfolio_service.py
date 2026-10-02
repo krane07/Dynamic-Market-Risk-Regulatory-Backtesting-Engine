@@ -1,11 +1,46 @@
 import numpy as np
 import pandas as pd
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from src.models.historical_data import HistoricalData
+from src.models.portfolio_header import PortfolioHeader
+from src.models.portfolio_composition import PortfolioComposition
 from src.services.data_service import sync_ticker
 
+
+from fastapi import HTTPException
+
+def get_portfolio_components(
+        db: Session, 
+        portfolio_name: str)-> dict:
+
+    stmt = (select(PortfolioComposition.ticker, PortfolioComposition.units)
+        .join(PortfolioHeader, PortfolioComposition.portfolio_id == PortfolioHeader.id)
+        .where(PortfolioHeader.portfolio_name == portfolio_name)
+    )
+    result = db.execute(stmt).all()
+
+    if not result:
+        raise HTTPException(status_code=404, detail="Portfolio not found")
+    
+    return {ticker: units for ticker, units in result}
+
+def check_portfolio_existance(
+        db: Session,
+        portfolio_name: str) -> bool:
+    stmt = (select(PortfolioHeader.portfolio_name)
+            .where(PortfolioHeader.portfolio_name == portfolio_name)
+    )
+
+    result = db.execute(stmt).scalar_one_or_none()
+
+    if result is None:
+        raise HTTPException(status_code=404, detail="Portfolio not found")
+    else:
+        pass
+
+        
 
 def get_portfolio_returns(
     db: Session, 

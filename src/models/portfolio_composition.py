@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 from datetime import datetime
-from sqlalchemy import Float, Integer, String, func, ForeignKey
+from sqlalchemy import Float, Integer, String, func, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from src.core.database import Base
 
@@ -15,14 +15,17 @@ class PortfolioComposition(Base):
     """
 
     __tablename__ = "portfolio_composition"
+    __table_args__ = (
+            UniqueConstraint("portfolio_id", "ticker", name="uq_id_ticker")
+            )
     id: Mapped[int]= mapped_column(primary_key=True, index=True)
     portfolio_id: Mapped[int] = mapped_column(
         ForeignKey("portfolio_header.portfolio_id",ondelete="CASCADE")
         )
     ticker: Mapped[str] = mapped_column(String(10))
-    buy_price: Mapped[float] = mapped_column(Float)
+    # buy_price: Mapped[float] = mapped_column(Float)
     units: Mapped[int] = mapped_column(Integer)
-    weight: Mapped[float] = mapped_column(nullable=False)
+    # weight: Mapped[float] = mapped_column(nullable=False)
     date_established: Mapped[datetime] = mapped_column(server_default=func.now())
 
     portfolio: Mapped["PortfolioHeader"] = relationship(back_populates="components")
