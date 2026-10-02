@@ -5,12 +5,15 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "arch>=8.0.0",
+    "fastapi[standard]>=0.141.1",
     "matplotlib>=3.11.1",
     "numpy>=2.5.2",
     "pandas>=3.0.5",
     "pydantic>=2.13.5",
     "pydantic-settings>=2.15.0",
     "redis>=8.1.0",
+    "scipy>=1.18.1",
     "sqlalchemy>=2.0.52",
     "streamlit>=1.62.0",
     "yfinance>=1.7.0",
