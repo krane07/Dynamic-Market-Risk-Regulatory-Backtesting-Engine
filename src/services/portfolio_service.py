@@ -36,9 +36,9 @@ def check_portfolio_existance(
     result = db.execute(stmt).scalar_one_or_none()
 
     if result is None:
-        raise HTTPException(status_code=404, detail="Portfolio not found")
-    else:
-        pass
+        return False
+        # raise HTTPException(status_code=404, detail="Portfolio not found")
+    return True
 
         
 
