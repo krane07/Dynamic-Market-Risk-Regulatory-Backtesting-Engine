@@ -16,7 +16,7 @@ class PortfolioComposition(Base):
 
     __tablename__ = "portfolio_composition"
     __table_args__ = (
-            UniqueConstraint("portfolio_id", "ticker", name="uq_id_ticker")
+            UniqueConstraint("portfolio_id", "ticker", name="uq_id_ticker"),
             )
     id: Mapped[int]= mapped_column(primary_key=True, index=True)
     portfolio_id: Mapped[int] = mapped_column(
