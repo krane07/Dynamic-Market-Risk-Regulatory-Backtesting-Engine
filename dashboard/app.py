@@ -44,20 +44,22 @@ def fetch_price_data(ticker: str):
     d = r.json()
     return {"Date": d["dates"], "Adj Close": d["adj_close"]}
 
-def search_portfolio(name: str):
-    r = requests.get(f"{BACKEND_URL}/portfolios/{name}", timeout=TIMEOUT)
+def search_portfolio(name: str, include_components: bool):
+    r = requests.get(f"{BACKEND_URL}/portfolios/{name}",
+                     params={"include_components":include_components}, timeout=TIMEOUT)
     if r.status_code == 404:
         return None
     r.raise_for_status()
-    return r.json()["holdings"]
+    body = r.json()
+    return body["holdings"] if include_components else True
 
 def save_portfolio_to_backend(name: str, holdings: dict):
-    is_new = search_portfolio(name)
-    if is_new is None:
-        r = requests.post(f"{BACKEND_URL}/portfolios",
+    is_new = search_portfolio(name, False)
+    if not is_new:
+        r = requests.post(f"{BACKEND_URL}/portfolios/save",
                           json={"name": name, "holdings": holdings}, timeout=TIMEOUT)
     else:
-        r = requests.put(f"{BACKEND_URL}/portfolios/{name}",
+        r = requests.put(f"{BACKEND_URL}/portfolios/modify{name}",
                          json={"holdings": holdings}, timeout=TIMEOUT)
     r.raise_for_status()        # raises on 4xx/5xx, which is what your docstring wants
 
@@ -204,7 +206,7 @@ elif mode == "Build Portfolio":
             st.error("Please enter a portfolio name.")
         else:
             reset_edit_state()
-            found = search_portfolio(portfolio_name)
+            found = search_portfolio(portfolio_name, True)
             if found is None:
                 st.session_state.portfolio_mode = None
                 st.session_state.loaded_portfolio = None
