@@ -11,3 +11,7 @@ wheels/
 
 # Environment variables
 .env
+# Database
+quant_engine.db
+# Test
+test_syn.py

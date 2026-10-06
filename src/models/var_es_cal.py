@@ -2,9 +2,9 @@ from datetime import datetime
 from sqlalchemy import func, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 from src.core.database import Base
-from src.models.portfolio_header import portfolio_header
+from src.models.portfolio_header import PortfolioHeader
 
-class var_es_cal(Base):
+class VarEsCal(Base):
     """VaR and ES Table
     Stores Calculated VaR and ES for the portfolios
     """
