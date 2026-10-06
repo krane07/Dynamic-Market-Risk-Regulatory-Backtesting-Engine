@@ -22,7 +22,7 @@ class PortfolioComposition(Base):
     portfolio_id: Mapped[int] = mapped_column(
         ForeignKey("portfolio_header.portfolio_id",ondelete="CASCADE")
         )
-    ticker: Mapped[str] = mapped_column(String(10))
+    ticker: Mapped[str] = mapped_column(String(30))
     # buy_price: Mapped[float] = mapped_column(Float)
     units: Mapped[int] = mapped_column(Integer)
     # weight: Mapped[float] = mapped_column(nullable=False)

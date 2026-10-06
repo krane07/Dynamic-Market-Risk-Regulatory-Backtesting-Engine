@@ -36,6 +36,14 @@ for key, value in DEFAULTS.items():
 # -----------------------------------------------------------------------------
 TIMEOUT = 10
 
+def check_ticker(ticker:str)-> tuple:
+    r = requests.get(f"{BACKEND_URL}/portfolio/ticker/{ticker}", timeout=TIMEOUT)
+    if (r.status_code == 404 or r.status_code == 503):
+        return (False, r.json()["detail"])
+    r.raise_for_status()
+    return (True, r.json()["exists"])
+
+
 def fetch_price_data(ticker: str):
     r = requests.get(f"{BACKEND_URL}/prices/{ticker}", timeout=TIMEOUT)
     if r.status_code == 404:
@@ -62,6 +70,7 @@ def save_portfolio_to_backend(name: str, holdings: dict):
         r = requests.put(f"{BACKEND_URL}/portfolios/modify{name}",
                          json={"holdings": holdings}, timeout=TIMEOUT)
     r.raise_for_status()        # raises on 4xx/5xx, which is what your docstring wants
+    return {"id": r.json()["id"], "name": r.json()["name"]}
 
 def calculate_risk(measure: str, payload: dict):
     r = requests.post(f"{BACKEND_URL}/risk/{measure}", json=payload, timeout=TIMEOUT)
@@ -131,14 +140,14 @@ def save_edit():
     final = {t: q for t, q in final.items() if q > 0}  # drop zero-quantity rows
 
     try:
-        save_portfolio_to_backend(st.session_state.loaded_portfolio_name, final)
+        status = save_portfolio_to_backend(st.session_state.loaded_portfolio_name, final)
     except Exception as e:
         st.toast(f"Could not save portfolio: {e}", icon="❌")
         return  # stay in edit mode so nothing is lost
 
     st.session_state.loaded_portfolio = final
     reset_edit_state()
-    st.toast("Portfolio saved", icon="✅")
+    st.toast(f"Portfolio: {status["name"]} with id:{status["id"]} saved", icon="✅")
 
 
 # -----------------------------------------------------------------------------
@@ -257,8 +266,9 @@ elif mode == "Build Portfolio":
                     st.error("Please enter a ticker.")
                 elif ticker in st.session_state.portfolio_tickers:
                     st.warning(f"{ticker} has already been added.")
+                elif not check_ticker(ticker)[0]:
+                    st.error(check_ticker(ticker)[1])
                 else:
-                    # TODO: check that the ticker exists
                     st.session_state.portfolio_tickers[ticker] = quantity
                     st.rerun()
 

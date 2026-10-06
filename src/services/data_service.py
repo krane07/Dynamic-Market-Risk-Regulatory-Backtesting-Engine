@@ -10,6 +10,29 @@ from src.models.portfolio_header import PortfolioHeader
 from src.models.portfolio_composition import PortfolioComposition
 from src.schemas.schema import Portfolio
 
+class TickerLookupError(Exception):
+    """Raised when we couldn't determine whether a ticker exists."""
+
+def ticker_ns(ticker: str)-> str:
+    if ticker.endswith(".BO"):
+        ticker = ticker.removesuffix(".BO")
+        return  f"{ticker}.NS"
+    elif not ticker.endswith(".NS"):
+        return f"{ticker}.NS"
+
+def check_ticker_existance(ticker: str) -> bool:
+    ticker = ticker_ns(ticker.strip().upper())
+
+    try:
+        price = yf.Ticker(ticker).fast_info.last_price
+    except (KeyError, ValueError, TypeError):
+        # typical yfinance failures for unknown symbols (missing fields)
+        return False
+    except Exception as e:
+        raise TickerLookupError(str(e)) from e
+
+    return price is not None and price > 0
+
 def sync_ticker(db: Session, ticker: str, lookback_days: int = 500)-> dict:
     """This function syncs the historical adjusted close price of the ticker with the databae
     Args:
@@ -22,11 +45,12 @@ def sync_ticker(db: Session, ticker: str, lookback_days: int = 500)-> dict:
 
     # Appending .NS if not present as suffix and if .BO is present swap it with .NS
     ticker = ticker.strip().upper()
-    if ticker.endswith(".BO"):
-        ticker = ticker.removesuffix(".BO")
-        ticker =  f"{ticker}.NS"
-    elif not ticker.endswith(".NS"):
-        ticker = f"{ticker}.NS"
+    ticker = ticker_ns(ticker)
+    # if ticker.endswith(".BO"):
+    #     ticker = ticker.removesuffix(".BO")
+    #     ticker =  f"{ticker}.NS"
+    # elif not ticker.endswith(".NS"):
+    #     ticker = f"{ticker}.NS"
 
     # Retrieve latest records for the ticker in the DB
     latest_record = db.execute(select(func.max(HistoricalData.date))
@@ -106,7 +130,7 @@ def sync_ticker(db: Session, ticker: str, lookback_days: int = 500)-> dict:
     }
 
 def get_ticker_price():
-    
+
     pass
 
 def get_portfolio_components(
@@ -241,3 +265,50 @@ def get_portfolio_returns(
     portfolio_value = portfolio_value.loc[aligned_idx]
 
     return returns_df, portfolio_returns, weights_df, portfolio_value
+
+
+def db_save_portfolio(db: Session,
+                      p: Portfolio)-> dict:
+    portfolio = db.execute(select(PortfolioHeader.portfolio_name)
+               .where(PortfolioHeader.portfolio_name == p.name)).scalar_one_or_none
+    if portfolio is None:
+        portfolio_to_save  = PortfolioHeader(portfolio_name = p.name)
+
+        for ticker, units in p.holdings.items():
+            portfolio_to_save.components.append(
+                PortfolioComposition(
+                    ticker=ticker_ns(ticker),
+                    units=int(units)
+                )
+            )
+        db.add(portfolio_to_save)
+        db.commit()
+        db.refresh(portfolio_to_save)
+
+        return {"id": portfolio_to_save.portfolio_id, "name": portfolio_to_save.portfolio_name}
+
+    else:
+        portfolio.components.clear()
+    
+        for ticker, units in p.holdings.items():
+            portfolio.components.append(
+                PortfolioComposition(
+                    ticker=ticker_ns(ticker),
+                    units=int(units)
+                )
+            )
+        db.commit()
+
+        return {"id": portfolio.portfolio_id, "name": portfolio.portfolio_name}
+
+def db_delete_portfolio(db: Session,
+                        name: str):
+    stmt = select(PortfolioHeader).where(PortfolioHeader.portfolio_name == name)
+    portfolio = db.execute(stmt).scalar_one_or_none
+
+    if not portfolio:
+        return False
+    
+    db.delete(portfolio)
+    db.commit()
+    return True

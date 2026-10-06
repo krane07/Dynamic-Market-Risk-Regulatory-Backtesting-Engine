@@ -13,7 +13,7 @@ class PortfolioHeader(Base):
     Stores name of the portfolio created by user
     """
     __tablename__ = "portfolio_header"
-    __table_args = (
+    __table_args__ = (
             UniqueConstraint("portfolio_name", name="uq_portfolio_name"),
             )
     portfolio_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
